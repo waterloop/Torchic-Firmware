@@ -50,15 +50,16 @@ CAN_HandleTypeDef hcan;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-uint16_t ADC2ConvertedValues[64];
+uint16_t ADC2ConvertedValues[256];
 float temperature[NUMBER_OF_TEMP_PROBES + 2]; //adding 2 to make 4 in case anything over CAN is expecting 4 temperatures. Fix later
 temperature [2] = 25.0;
 temperature [3] = 25.0;
-float temperature_coefficients[7] = { 0.138169980083766, -1.217224803711306, 4.247427897249789,
-					-7.514843765988409, 7.207695652465472, -3.996991313967717, 1.592960984517588};
+float temperature_coefficients[11] = { 1.441004935998545e-30, -2.493264917906345e-26, 1.873231341851937e-22,
+		-8.019747212933114e-19, 2.159260805481202e-15, -3.810357774049725e-12, 4.463162917877736e-09,
+		-3.452499998340432e-06, 0.001739279357993, -0.587052056217206, 1.791977313092020e+02};
 uint32_t sum = 0;
 float mean = 0;
-float offset[4] = {0.0, 0.0, 0.0, 0.0};
+float offset[4] = {1.0, 1.5, 1.0, 1.0};
 uint8_t temp_bytes1[4];
 uint8_t temp_bytes2[4];
 uint8_t IDs[2] = {0x40, 0x41};			// 0x42, 0x43 for the other board
@@ -120,7 +121,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   hcan.Instance->MCR = 0x60; // important for debugging canbus, allows for normal operation during debugging
   HAL_CAN_Start(&hcan);
-  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)ADC2ConvertedValues,64);
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)ADC2ConvertedValues,256);
   HAL_TIM_Base_Start_IT(&htim2);
   __HAL_TIM_SET_COUNTER(&htim2, 0);
   /* USER CODE END 2 */
@@ -149,13 +150,12 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL4;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -279,8 +279,8 @@ static void MX_CAN_Init(void)
   hcan.Init.Prescaler = 4;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SyncJumpWidth = CAN_SJW_1TQ;
-  hcan.Init.TimeSeg1 = CAN_BS1_11TQ;
-  hcan.Init.TimeSeg2 = CAN_BS2_4TQ;
+  hcan.Init.TimeSeg1 = CAN_BS1_13TQ;
+  hcan.Init.TimeSeg2 = CAN_BS2_2TQ;
   hcan.Init.TimeTriggeredMode = DISABLE;
   hcan.Init.AutoBusOff = DISABLE;
   hcan.Init.AutoWakeUp = DISABLE;
@@ -403,25 +403,25 @@ void float2Bytes(float val, uint8_t *bytes_array){
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-	for (uint8_t i=0; i < 3; i++) {
+	for (uint8_t i=0; i < 4; i++) {
 		sum = 0;
 		mean = 0;
 
 
-		for(uint8_t j=0; j < 16; j++) {
+		for(uint8_t j=0; j < 64; j++) {
 			sum += ADC2ConvertedValues[i + 4*j];
 		}
 
-		mean = sum/16.0;
+		mean = sum/64.0;
 
 		//temperature[i] = mean*ADC2V;    		//for debugging
-		for (uint8_t i = 0; i < NUMBER_OF_TEMP_PROBES; i++){
-			temperature[i] = temperature_coefficients[0];
-			for (uint8_t k = 0; k < 9; k++ ) {
-				temperature[i] = temperature[i]*mean + temperature_coefficients[k];
-			}
-			temperature[i] -= offset[i];
+
+		temperature[i] = temperature_coefficients[0];
+		for (uint8_t k = 1; k < 11; k++ ) {
+			temperature[i] = temperature[i]*mean + temperature_coefficients[k];
 		}
+		temperature[i] -= offset[i];
+
 
 
 	}
@@ -430,19 +430,20 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	for (uint8_t i=0; i < 2; ++i) { 										//looping through CAN messages and sending data acquired
 
-				TxHeader.StdId = IDs[i];
+		TxHeader.StdId = IDs[i];
+		float2Bytes(temperature[2*i], &temp_bytes1[0]); 						//converting the floats to packets of bytes
+		float2Bytes(temperature[2*i+1], &temp_bytes2[0]);
 
-				for (uint8_t j=0 ; j < NUMBER_OF_TEMP_PROBES + 2; j++) {
-					float2Bytes(temperature[i], &temp_bytes1[0]); 						//converting the floats to packets of bytes
-					float2Bytes(temperature[i], &temp_bytes2[0]);
+		for (uint8_t j=0 ; j < 4; j++) {
 
-					Data[3-j] = temp_bytes1[j]; 									//writing down for the data buffer
-					Data[7-j] = temp_bytes2[j];
-				}
+			Data[3-j] = temp_bytes1[j]; 									//writing down for the data buffer
+			Data[7-j] = temp_bytes2[j];
 
-				HAL_CAN_AddTxMessage(&hcan, &TxHeader, Data, &TxMailBox ); 	// load message to mailbox
-				while (HAL_CAN_IsTxMessagePending( &hcan, TxMailBox));		//waiting till message gets through
-			}
+		}
+
+		HAL_CAN_AddTxMessage(&hcan, &TxHeader, Data, &TxMailBox ); 	// load message to mailbox
+		while (HAL_CAN_IsTxMessagePending( &hcan, TxMailBox));		//waiting till message gets through
+	}
 }
 /* USER CODE END 4 */
 
