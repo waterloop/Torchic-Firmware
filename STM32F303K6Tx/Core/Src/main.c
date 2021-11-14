@@ -33,6 +33,7 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define ADC2V	0.0008058608F // 3.3/4065
+#define NUMBER_OF_TEMP_PROBES	2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -50,7 +51,9 @@ TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
 uint16_t ADC2ConvertedValues[64];
-float temperature[4];
+float temperature[NUMBER_OF_TEMP_PROBES + 2]; //adding 2 to make 4 in case anything over CAN is expecting 4 temperatures. Fix later
+temperature [2] = 25.0;
+temperature [3] = 25.0;
 float temperature_coefficients[7] = { 0.138169980083766, -1.217224803711306, 4.247427897249789,
 					-7.514843765988409, 7.207695652465472, -3.996991313967717, 1.592960984517588};
 uint32_t sum = 0;
@@ -412,7 +415,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 		mean = sum/16.0;
 
 		//temperature[i] = mean*ADC2V;    		//for debugging
-		for (uint8_t i = 0; i < 4; i++){
+		for (uint8_t i = 0; i < NUMBER_OF_TEMP_PROBES; i++){
 			temperature[i] = temperature_coefficients[0];
 			for (uint8_t k = 0; k < 9; k++ ) {
 				temperature[i] = temperature[i]*mean + temperature_coefficients[k];
@@ -428,10 +431,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
 	for (uint8_t i=0; i < 2; ++i) { 										//looping through CAN messages and sending data acquired
 
 				TxHeader.StdId = IDs[i];
-				float2Bytes(temperature[i], &temp_bytes1[0]); 						//converting the floats to packets of bytes
-				float2Bytes(temperature[i], &temp_bytes2[0]);
 
-				for (uint8_t j=0 ; j < 4; j++) {
+				for (uint8_t j=0 ; j < NUMBER_OF_TEMP_PROBES + 2; j++) {
+					float2Bytes(temperature[i], &temp_bytes1[0]); 						//converting the floats to packets of bytes
+					float2Bytes(temperature[i], &temp_bytes2[0]);
 
 					Data[3-j] = temp_bytes1[j]; 									//writing down for the data buffer
 					Data[7-j] = temp_bytes2[j];
