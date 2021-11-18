@@ -428,22 +428,22 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	for (uint8_t i=0; i < 2; ++i) { 										//looping through CAN messages and sending data acquired
+	//for (uint8_t i=0; i < 2; ++i) { 										//looping through CAN messages and sending data acquired
 
-		TxHeader.StdId = IDs[i];
-		float2Bytes(temperature[2*i], &temp_bytes1[0]); 						//converting the floats to packets of bytes
-		float2Bytes(temperature[2*i+1], &temp_bytes2[0]);
+		TxHeader.ExtId = 0x40; // 0x41 for other board
+		float2Bytes(temperature[0], &temp_bytes1[0]); 						//converting the floats to packets of bytes
+		float2Bytes(temperature[2], &temp_bytes2[0]);
 
 		for (uint8_t j=0 ; j < 4; j++) {
 
 			Data[3-j] = temp_bytes1[j]; 									//writing down for the data buffer
-			Data[7-j] = temp_bytes2[j];
+			Dat1a[7-j] = temp_bytes2[j];
 
 		}
 
 		HAL_CAN_AddTxMessage(&hcan, &TxHeader, Data, &TxMailBox ); 	// load message to mailbox
 		while (HAL_CAN_IsTxMessagePending( &hcan, TxMailBox));		//waiting till message gets through
-	}
+	//}
 }
 /* USER CODE END 4 */
 
