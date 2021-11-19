@@ -52,8 +52,6 @@ TIM_HandleTypeDef htim2;
 /* USER CODE BEGIN PV */
 uint16_t ADC2ConvertedValues[256];
 float temperature[NUMBER_OF_TEMP_PROBES + 2]; //adding 2 to make 4 in case anything over CAN is expecting 4 temperatures. Fix later
-temperature [2] = 25.0;
-temperature [3] = 25.0;
 float temperature_coefficients[11] = { 1.441004935998545e-30, -2.493264917906345e-26, 1.873231341851937e-22,
 		-8.019747212933114e-19, 2.159260805481202e-15, -3.810357774049725e-12, 4.463162917877736e-09,
 		-3.452499998340432e-06, 0.001739279357993, -0.587052056217206, 1.791977313092020e+02};
@@ -78,7 +76,7 @@ static void MX_CAN_Init(void);
 static void MX_ADC2_Init(void);
 static void MX_TIM2_Init(void);
 /* USER CODE BEGIN PFP */
-
+void float2Bytes(float val, uint8_t *bytes_array);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -138,7 +136,7 @@ int main(void)
 		for (uint8_t j=0 ; j < 4; j++) {
 
 			Data[j] = temp_bytes1[j]; 									//writing down for the data buffer
-			Dat1a[j+4] = temp_bytes2[j];
+			Data[j+4] = temp_bytes2[j];
 
 		}
 
