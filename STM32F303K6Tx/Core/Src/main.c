@@ -129,7 +129,7 @@ int main(void)
   while (1)
   {
 
-		TxHeader.ExtId = 0x40; // 0x41 for other board
+		TxHeader.StdId = 0x40; // 0x41 for other board
 		float2Bytes(temperature[0], &temp_bytes1[0]); 						//converting the floats to packets of bytes
 		float2Bytes(temperature[2], &temp_bytes2[0]);
 
@@ -320,7 +320,7 @@ static void MX_CAN_Init(void)
   TxHeader.StdId = 0x00;
   //TxHeader.ExtId = 0x01;
   TxHeader.RTR = CAN_RTR_DATA; 	 			// want data frame
-  TxHeader.IDE = CAN_ID_EXT;	 			// want extended frame
+  TxHeader.IDE = CAN_ID_STD;	 			// want standard frame
   TxHeader.DLC = 8;			 	 			// amounts of bytes u sending
   TxHeader.TransmitGlobalTime = DISABLE;
   /* USER CODE END CAN_Init 2 */
