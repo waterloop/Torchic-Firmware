@@ -150,6 +150,9 @@ int main(void)
 
 		}
 
+    CANFrame_set_field(&frame, TORCHIC_1_TEMP_1, temp_1);
+    CANFrame_set_field(&frame, TORCHIC_1_TEMP_2, temp_2);
+
     CANBus_put_frame(&frame);
 
 		HAL_Delay(200);
