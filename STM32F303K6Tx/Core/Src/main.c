@@ -122,9 +122,10 @@ int main(void)
   HAL_CAN_Start(&hcan);
   HAL_ADC_Start_DMA(&hadc2, (uint32_t*)ADC2ConvertedValues,256);
 
-  CANBus_init(&hcan, &htim7);
+  if (CANBus_init(&hcan, &htim7) != HAL_OK) { Error_Handler(); }
 
-  CANBus_subscribe(STATE_CHANGE_REQ);
+  if (CANBus_subscribe(STATE_CHANGE_REQ) != HAL_OK) { Error_Handler(); }
+
   //HAL_TIM_Base_Start_IT(&htim2);
   //__HAL_TIM_SET_COUNTER(&htim2, 0);
   /* USER CODE END 2 */
