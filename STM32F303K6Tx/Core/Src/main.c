@@ -135,20 +135,8 @@ int main(void)
   while (1)
   {
     CANFrame frame = CANFrame_init(TORCHIC_1);
-    temp_1 = 0;
-    temp_2 = 0;
-
-    //converting the floats to packets of bytes
-		float2Bytes(temperature[0], &temp_bytes1[0]); 						
-		float2Bytes(temperature[2], &temp_bytes2[0]);
-
-		//writing down for the data buffer
-    for (uint8_t j=0 ; j < 4; j++) {
-
-			temp_1 |= temp_bytes1[j] << 8 * (3 - j); 									
-			temp_2 |= temp_bytes2[j] << 8 * (3 - j);
-
-		}
+    temp_1 = FLOAT_TO_UINT(temperature[0]);
+    temp_2 = FLOAT_TO_UINT(temperature[2]);;
 
     CANFrame_set_field(&frame, TORCHIC_1_TEMP_1, temp_1);
     CANFrame_set_field(&frame, TORCHIC_1_TEMP_2, temp_2);
@@ -311,7 +299,7 @@ static void MX_CAN_Init(void)
   hcan.Init.AutoBusOff = DISABLE;
   hcan.Init.AutoWakeUp = DISABLE;
   hcan.Init.AutoRetransmission = DISABLE;
-  hcan.Init.ReceiveFifoLocked = DISABLE;
+  hcan.Init.ReceiveFifoLocked = ENABLE;
   hcan.Init.TransmitFifoPriority = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
   {
@@ -437,17 +425,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void float2Bytes(float val, uint8_t *bytes_array){
-  // Create union of shared memory space
-  union {
-    float float_variable;
-    uint8_t temp_array[4];
-  } u;
-  // Overite bytes of union with float variable
-  u.float_variable = val;
-  // Assign bytes to input array
-  memcpy(bytes_array, u.temp_array, 4);
-}
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 	for (uint8_t i=0; i < 4; i++) {
@@ -478,25 +455,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   WLoopCAN_timer_isr(htim);
 }
 
-/*
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
-	//for (uint8_t i=0; i < 2; ++i) { 										//looping through CAN messages and sending data acquired
-
-		TxHeader.ExtId = 0x40; // 0x41 for other board
-		float2Bytes(temperature[0], &temp_bytes1[0]); 						//converting the floats to packets of bytes
-		float2Bytes(temperature[2], &temp_bytes2[0]);
-
-		for (uint8_t j=0 ; j < 4; j++) {
-
-			Data[j] = temp_bytes1[j]; 									//writing down for the data buffer
-			Dat1a[j+4] = temp_bytes2[j];
-
-		}
-
-		HAL_CAN_AddTxMessage(&hcan, &TxHeader, Data, &TxMailBox ); 	// load message to mailbox
-		while (HAL_CAN_IsTxMessagePending( &hcan, TxMailBox));		//waiting till message gets through
-	//}
-}*/
 /* USER CODE END 4 */
 
 /**
