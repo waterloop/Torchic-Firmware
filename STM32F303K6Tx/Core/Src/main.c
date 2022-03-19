@@ -119,7 +119,6 @@ int main(void)
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
   hcan.Instance->MCR = 0x60; // important for debugging canbus, allows for normal operation during debugging
-  HAL_CAN_Start(&hcan);
   HAL_ADC_Start_DMA(&hadc2, (uint32_t*)ADC2ConvertedValues,256);
 
   if (CANBus_init(&hcan, &htim7) != HAL_OK) { Error_Handler(); }
