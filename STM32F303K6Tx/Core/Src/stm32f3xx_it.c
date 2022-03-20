@@ -57,7 +57,9 @@
 
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_adc2;
+extern CAN_HandleTypeDef hcan;
 extern TIM_HandleTypeDef htim2;
+extern TIM_HandleTypeDef htim7;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -215,6 +217,20 @@ void DMA1_Channel2_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles CAN RX0 interrupt.
+  */
+void CAN_RX0_IRQHandler(void)
+{
+  /* USER CODE BEGIN CAN_RX0_IRQn 0 */
+
+  /* USER CODE END CAN_RX0_IRQn 0 */
+  HAL_CAN_IRQHandler(&hcan);
+  /* USER CODE BEGIN CAN_RX0_IRQn 1 */
+
+  /* USER CODE END CAN_RX0_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM2 global interrupt.
   */
 void TIM2_IRQHandler(void)
@@ -226,6 +242,20 @@ void TIM2_IRQHandler(void)
   /* USER CODE BEGIN TIM2_IRQn 1 */
 
   /* USER CODE END TIM2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM7 global and DAC2 underrun error interrupts.
+  */
+void TIM7_DAC2_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM7_DAC2_IRQn 0 */
+  
+  /* USER CODE END TIM7_DAC2_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim7);
+  /* USER CODE BEGIN TIM7_DAC2_IRQn 1 */
+
+  /* USER CODE END TIM7_DAC2_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
