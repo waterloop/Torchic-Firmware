@@ -118,6 +118,13 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM7_Init();
   /* USER CODE BEGIN 2 */
+
+  // Set timer to work in debug mode
+  DBGMCU->APB1FZ &= ~(DBGMCU_APB1_FZ_DBG_TIM7_STOP);
+
+  // Start timers
+  HAL_TIM_Base_Start_IT(&htim7);
+
   hcan.Instance->MCR = 0x60; // important for debugging canbus, allows for normal operation during debugging
   HAL_ADC_Start_DMA(&hadc2, (uint32_t*)ADC2ConvertedValues,256);
 
