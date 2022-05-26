@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "string.h"
 #include "can.h"
+#include "temp_lut.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,14 +55,9 @@ TIM_HandleTypeDef htim7;
 /* USER CODE BEGIN PV */
 uint16_t ADC2ConvertedValues[256];
 float temperature[NUMBER_OF_TEMP_PROBES + 2]; //adding 2 to make 4 in case anything over CAN is expecting 4 temperatures. Fix later
-float temperature_coefficients[11] = { 1.441004935998545e-30, -2.493264917906345e-26, 1.873231341851937e-22,
-		-8.019747212933114e-19, 2.159260805481202e-15, -3.810357774049725e-12, 4.463162917877736e-09,
-		-3.452499998340432e-06, 0.001739279357993, -0.587052056217206, 1.791977313092020e+02};
 uint32_t sum = 0;
-float mean = 0;
-float offset[4] = {1.0, 1.5, 1.0, 1.0};
-uint8_t temp_bytes1[4];
-uint8_t temp_bytes2[4];
+uint16_t mean = 0;
+uint16_t lut_indx = 0;
 uint32_t temp_1;
 uint32_t temp_2;
 
@@ -444,16 +440,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 
 		mean = sum/64.0;
 
-		//temperature[i] = mean*ADC2V;    		//for debugging
-
-		temperature[i] = temperature_coefficients[0];
-		for (uint8_t k = 1; k < 11; k++ ) {
-			temperature[i] = temperature[i]*mean + temperature_coefficients[k];
-		}
-		temperature[i] -= offset[i];
-
-
-
+        // clamp the value that we're indexing the LUT at so we don't get any undefined behaviour
+        lut_indx = (mean - LUT_OFFSET)*(mean < LUT_SIZE) + (LUT_SIZE - 1)*(mean >= LUT_SIZE);
+        temperature[i] = ADC_TO_TEMP_LUT[lut_indx];
 	}
 }
 
